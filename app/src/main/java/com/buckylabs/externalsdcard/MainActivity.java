@@ -2,10 +2,12 @@ package com.buckylabs.externalsdcard;
 
 import android.Manifest;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.preference.ListPreference;
+import android.preference.PreferenceManager;
 import android.support.v4.content.FileProvider;
 import android.support.v4.provider.DocumentFile;
 import android.support.v7.app.AppCompatActivity;
@@ -25,6 +27,12 @@ public class MainActivity extends AppCompatActivity {
 
     TextView textView;
     Button button;
+    SharedPreferences preferences;
+    String rootUri;
+    String directoryUri;
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,6 +40,13 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         textView = findViewById(R.id.textView);
         button = findViewById(R.id.button);
+        preferences=getSharedPreferences("prefs",MODE_PRIVATE);
+        rootUri= preferences.getString("RootUri","");
+        directoryUri = preferences.getString("DirUri","");
+
+        Log.e("RootUri",rootUri);
+
+
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
@@ -50,7 +65,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         textView.setText(Environment.getExternalStorageDirectory().getAbsolutePath());
-
+        //createDirectory(rootUri);
+        createFile(rootUri);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -59,8 +75,10 @@ public class MainActivity extends AppCompatActivity {
                 i.putExtra("paths",paths);
                 startActivity(i);*/
 
-                Intent i=new Intent("android.intent.action.OPEN_DOCUMENT_TREE");
-                startActivityForResult(i,42);
+              Intent i=new Intent("android.intent.action.OPEN_DOCUMENT_TREE");
+               startActivityForResult(i,42);
+
+
 
 
             }
@@ -69,19 +87,40 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public void createFile(String rootPath) {
-        File f2 = new File(rootPath);
-        if (!f2.exists()) {
-            f2.mkdirs();
-        }
+public void createDirectory(String treeUri){
+
+
+        DocumentFile rootPath = DocumentFile.fromTreeUri(this,Uri.parse(treeUri));
+        DocumentFile directory = rootPath.createDirectory("App_Backup_Pro");
+        Log.e("1","1");
+
+        /*directoryUri = directory.getUri().getPath();
+        Log.e("dDirUri",directoryUri);
+        directory.createFile("text/plain","Hello");
+        Log.e("1","1");*/
     }
 
-    public void createDirectory(String rootPath) {
-        File f2 = new File(rootPath);
-        if (!f2.exists()) {
-            f2.mkdirs();
-        }
-    }
+ public void createFile(String treeUri){
+
+     DocumentFile rootPath = DocumentFile.fromTreeUri(this,Uri.parse(treeUri));
+     for(DocumentFile file:rootPath.listFiles()){
+
+         Log.e("files",file.getName());
+         if(file.getName().equals("App_Backup_Pro")){
+
+             file.createFile("text/plain","Wow");
+
+             Log.e("DirFound","******");
+         }
+
+     }
+ }
+
+
+
+
+
+
 
     public String getStoragePaths(){
         String removableStoragePath="";
@@ -99,41 +138,30 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == 42 && resultCode == RESULT_OK) {
             // handle result
             Uri treeUri = data.getData();
-            Log.e("Uri",""+treeUri.getPath());
-            DocumentFile dir=DocumentFile.fromTreeUri(this,treeUri);
-         //   String path = UriHelpers.getPath(context, save_tree.getUri());
-            Log.e("Dir",dir.getName());
+            Log.e("tree",treeUri+"");
 
 
-           DocumentFile pickedDir= dir.createDirectory("App_Backup_Pro");
-            DocumentFile newFile2 = pickedDir.createFile("text/plain", "My Novel");
-            OutputStream out = null;
-            try {
-                out = getContentResolver().openOutputStream(newFile2.getUri());
-                out.write("A long time ago...".getBytes());
-                out.close();
-                Log.e("Out",newFile2.getUri().getPath());
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }
-             catch (IOException e) {
-                e.printStackTrace();
-            }
+            Log.e("root",rootUri);
+            final int takeFlags =data.getFlags()&
+                     (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            getContentResolver().takePersistableUriPermission(treeUri, takeFlags);
+
+//createDirectory(rootUri);
+            /*DocumentFile rootPath = DocumentFile.fromTreeUri(this,treeUri);
+            DocumentFile directory = rootPath.createDirectory("App_Backup_Pro");
+            Log.e("1","1");
+
+            directoryUri = directory.getUri().getPath();
+            directory.createFile("text/plain","Hello");
+            Log.e("1","1");
+*/
 
 
-            //Log.e("Dirrrrr",newFile.getUri().getPath());
+            SharedPreferences.Editor prefEditor=preferences.edit();
+            prefEditor.putString("RootUri", String.valueOf(treeUri));
+            prefEditor.putInt("flags",takeFlags);
 
-            Log.e("Path",Environment.getExternalStorageDirectory().getAbsolutePath());
-            Log.e("StorePath",getStoragePaths());
-
-
-
-
-
-
-            //createDirectory();
-
-           // Uri path = FileProvider.getUriForFile(this, this.getPackageName() + ".provider", file);
+            prefEditor.commit();
 
         }
     }
