@@ -56,15 +56,17 @@ public class MainActivity extends AppCompatActivity {
             //   requestPermissions(new String[]{android.Manifest.permission.F}, 1);
 
         }
+StringBuilder s=new StringBuilder();
         String[] externalStoragePaths = StorageUtil.getStorageDirectories(this);
         final String[] paths = new String[externalStoragePaths.length];
         for (int i = 0; i < externalStoragePaths.length; i++) {
 
-            String s = externalStoragePaths[i];
-            paths[i] = s;
+             s.append(externalStoragePaths[i]);
+             s.append("**");
+           // paths[i] = s;
         }
 
-        textView.setText(Environment.getExternalStorageDirectory().getAbsolutePath());
+        textView.setText(s);
         //createDirectory(rootUri);
         createFile(rootUri);
         button.setOnClickListener(new View.OnClickListener() {
