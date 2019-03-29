@@ -105,18 +105,30 @@ public void createDirectory(String treeUri){
  public void createFile(String treeUri){
 
      DocumentFile rootPath = DocumentFile.fromTreeUri(this,Uri.parse(treeUri));
-     for(DocumentFile file:rootPath.listFiles()){
 
-         Log.e("files",file.getName());
-         if(file.getName().equals("App_Backup_Pro")){
+     //Works on emulator APi 21 and Api 28
 
-             file.createFile("text/plain","Wow");
+     DocumentFile dir= rootPath.findFile("App_Backup_Pro");
+     dir.createFile("text/plain","Wow");
 
-             Log.e("DirFound","******");
-         }
+     //works on Api 28
+    /*try {
+        for (DocumentFile file : rootPath.listFiles()) {
 
-     }
- }
+             //Log.e("files",file.getName());
+            if (file.getName().equals("App_Backup_Pro") && file.isDirectory()) {
+
+                file.createFile("text/plain", "Wow");
+
+                Log.e("DirFound", "******");
+            }
+
+        }
+    }catch (NullPointerException e){
+        e.printStackTrace();
+    }*/
+
+    }
 
 
 
