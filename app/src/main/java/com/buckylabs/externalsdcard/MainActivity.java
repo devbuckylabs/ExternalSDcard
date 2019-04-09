@@ -3,9 +3,13 @@ package com.buckylabs.externalsdcard;
 import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.os.ParcelFileDescriptor;
 import android.preference.ListPreference;
 import android.preference.PreferenceManager;
 import android.support.v4.content.FileProvider;
@@ -19,9 +23,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collections;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -68,7 +76,13 @@ StringBuilder s=new StringBuilder();
 
         textView.setText(s);
         //createDirectory(rootUri);
-        createFile(rootUri);
+        try {
+            createFile(rootUri);
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -102,14 +116,39 @@ public void createDirectory(String treeUri){
         Log.e("1","1");*/
     }
 
- public void createFile(String treeUri){
+ public void createFile(String treeUri) throws PackageManager.NameNotFoundException, FileNotFoundException {
 
      DocumentFile rootPath = DocumentFile.fromTreeUri(this,Uri.parse(treeUri));
 
      //Works on emulator APi 21 and Api 28
 
-     DocumentFile dir= rootPath.findFile("App_Backup_Pro");
-     dir.createFile("text/plain","Wow");
+     DocumentFile dir = rootPath.findFile("App_Backup_Pro");
+
+
+     ApkManager manager=new ApkManager(this);
+     List<Apk> apks=manager.getinstalledApks(false);
+     Apk apk=apks.get(1);
+     DocumentFile newFile = dir.createFile("application/vnd.android.package-archive", apk.getAppName());
+
+     File f1=new File(apk.getSourceDirectory());
+     FileInputStream in=new FileInputStream(f1);
+     OutputStream out = null;
+     try {
+         out = getContentResolver().openOutputStream(newFile.getUri());
+        // out.write("A long time ago...".getBytes());
+         //FileOutputStream out = new FileOutputStream(f2);
+         byte[] buf = new byte[1024];
+         int len;
+         while ((len = in.read(buf)) > 0) {
+             out.write(buf, 0, len);
+         }
+         out.close();
+     } catch (FileNotFoundException e) {
+         e.printStackTrace();
+     }
+    catch (IOException e) {
+         e.printStackTrace();
+     }
 
      //works on Api 28
     /*try {
